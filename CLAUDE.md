@@ -55,6 +55,10 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
    menetapkannya. Implementasi saat ini mengasumsikan Kaur Keuangan (fungsi penatausahaan);
    konfirmasi ke user/PM, terutama terkait struktur PKPKD/PPKD 2026 (temuan T4 review
    domain-compliance atas commit c275f62).
+6. Makna "tanda tangan Kades" pada penerbitan SPM: implementasi UI saat ini merekam siapa
+   penandatangannya (dipilih Sekdes, tanda tangan fisik diasumsikan terjadi di luar sistem).
+   Jika yang dimaksud persetujuan digital, perlu langkah aksi eksplisit oleh Kades di sistem —
+   jangan diputuskan sepihak (temuan #4 review domain-compliance atas commit 0c24b1a).
 
 ## Referensi
 

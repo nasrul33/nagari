@@ -64,8 +64,9 @@ class DetailTransaksi extends Component
             'penandatangan_id' => ['required', 'exists:users,id'],
         ]);
 
-        $penandatangan = User::where('desa_id', $this->transaksi->desa_id)
-            ->findOrFail($this->penandatangan_id);
+        // Validasi desa & peran penandatangan dilakukan di Action TerbitkanSpm,
+        // supaya percobaan manipulasi ikut tercatat di transaksi_logs.
+        $penandatangan = User::findOrFail($this->penandatangan_id);
 
         $this->jalankan(fn () => $aksi->handle($this->transaksi, auth()->user(), [
             'nomor_spm' => $this->nomor_spm,

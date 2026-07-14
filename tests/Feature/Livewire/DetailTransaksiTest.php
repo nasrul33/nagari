@@ -2,6 +2,7 @@
 
 use App\Actions\Workflow\AjukanSpp;
 use App\Actions\Workflow\CairkanDana;
+use App\Actions\Workflow\SelesaikanTransaksi;
 use App\Actions\Workflow\TerbitkanSpm;
 use App\Actions\Workflow\VerifikasiSpp;
 use App\Enums\PeranDesa;
@@ -40,6 +41,7 @@ function majukanKe(StatusTransaksi $target): void
         StatusTransaksi::Diverifikasi->value => fn () => app(VerifikasiSpp::class)->handle($t->transaksi, $t->sekdes),
         StatusTransaksi::SpmDiterbitkan->value => fn () => app(TerbitkanSpm::class)->handle($t->transaksi, $t->sekdes, ['nomor_spm' => 'SPM-001', 'penandatangan' => $t->kades]),
         StatusTransaksi::Dicairkan->value => fn () => app(CairkanDana::class)->handle($t->transaksi, $t->kaur, ['nomor_rekomendasi_camat' => 'REK-001']),
+        StatusTransaksi::Selesai->value => fn () => app(SelesaikanTransaksi::class)->handle($t->transaksi, $t->kaur),
     ];
 
     foreach ($langkah as $status => $aksi) {
@@ -152,6 +154,52 @@ it('menolak aksi UI oleh peran yang salah dan mencatatnya', function (string $me
     expect($this->transaksi->refresh()->status)->toBe($dariStatus)
         ->and($this->transaksi->logs()->where('berhasil', false)->count())->toBe(1);
 })->with('aksi ui oleh peran salah');
+
+// -------------------------------------- peran benar tapi state dilompati
+
+dataset('aksi ui melompati state', [
+    // [method, state saat aksi dipanggil, pelaku (peran benar utk transisi), properti]
+    'ajukanSpp saat sudah diajukan' => ['ajukanSpp', StatusTransaksi::SppDiajukan, 'kaur', ['nomor_spp' => 'X']],
+    'verifikasi saat masih draft' => ['verifikasi', StatusTransaksi::Draft, 'sekdes', []],
+    'terbitkanSpm saat masih draft' => ['terbitkanSpm', StatusTransaksi::Draft, 'sekdes', ['nomor_spm' => 'X', 'penandatangan_id' => '@kades']],
+    'cairkan saat masih draft' => ['cairkan', StatusTransaksi::Draft, 'kaur', ['nomor_rekomendasi_camat' => 'X']],
+    'selesaikan saat masih draft' => ['selesaikan', StatusTransaksi::Draft, 'kaur', []],
+    'ajukanSpp saat sudah selesai' => ['ajukanSpp', StatusTransaksi::Selesai, 'kaur', ['nomor_spp' => 'X']],
+]);
+
+it('menolak aksi UI yang melompati state meski perannya benar', function (string $method, StatusTransaksi $stateSaatAksi, string $pelakuKey, array $props) {
+    if ($stateSaatAksi !== StatusTransaksi::Draft) {
+        majukanKe($stateSaatAksi);
+    }
+
+    $komponen = Livewire::actingAs($this->{$pelakuKey})
+        ->test(DetailTransaksi::class, ['transaksi' => $this->transaksi]);
+
+    foreach ($props as $prop => $nilai) {
+        $komponen->set($prop, $nilai === '@kades' ? $this->kades->id : $nilai);
+    }
+
+    $komponen->call($method)->assertHasErrors('transisi');
+
+    expect($this->transaksi->refresh()->status)->toBe($stateSaatAksi)
+        ->and($this->transaksi->logs()->where('berhasil', false)->count())->toBe(1);
+})->with('aksi ui melompati state');
+
+it('menolak dan mencatat penandatangan SPM dari desa lain via UI', function () {
+    majukanKe(StatusTransaksi::Diverifikasi);
+
+    $kadesDesaLain = userDenganPeran(PeranDesa::KepalaDesa, Desa::factory()->create());
+
+    Livewire::actingAs($this->sekdes)
+        ->test(DetailTransaksi::class, ['transaksi' => $this->transaksi])
+        ->set('nomor_spm', 'SPM/001/2026')
+        ->set('penandatangan_id', $kadesDesaLain->id)
+        ->call('terbitkanSpm')
+        ->assertHasErrors('transisi');
+
+    expect($this->transaksi->refresh()->status)->toBe(StatusTransaksi::Diverifikasi)
+        ->and($this->transaksi->logs()->where('berhasil', false)->count())->toBe(1);
+});
 
 // --------------------------------------------------------- validasi input
 

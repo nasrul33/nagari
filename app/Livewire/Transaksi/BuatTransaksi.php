@@ -58,6 +58,8 @@ class BuatTransaksi extends Component
         return view('livewire.transaksi.buat-transaksi', [
             'tahunAnggarans' => TahunAnggaran::where('desa_id', auth()->user()->desa_id)
                 ->orderByDesc('tahun')->get(),
+            // TODO(coa): begitu seeder level 2-5 terisi dari lampiran resmi Permendagri,
+            // filter pilihan ke level Rincian Objek saja — pembukuan tidak boleh ke akun agregat.
             'akuns' => Akun::orderBy('kode')->get(),
         ]);
     }

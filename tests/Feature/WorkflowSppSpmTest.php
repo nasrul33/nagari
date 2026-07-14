@@ -153,6 +153,20 @@ it('menolak penerbitan SPM tanpa tanda tangan Kepala Desa', function () {
     expect($this->transaksi->refresh()->status)->toBe(StatusTransaksi::Diverifikasi);
 });
 
+it('menolak penandatangan SPM dari desa lain dan mencatatnya', function () {
+    jalankanSampai(StatusTransaksi::Diverifikasi);
+
+    $kadesDesaLain = userDenganPeran(PeranDesa::KepalaDesa, Desa::factory()->create());
+
+    expect(fn () => app(TerbitkanSpm::class)->handle($this->transaksi, $this->sekdes, [
+        'nomor_spm' => 'SPM-001',
+        'penandatangan' => $kadesDesaLain,
+    ]))->toThrow(TransisiDitolakException::class, 'desa yang sama');
+
+    expect($this->transaksi->refresh()->status)->toBe(StatusTransaksi::Diverifikasi)
+        ->and($this->transaksi->logs()->where('berhasil', false)->count())->toBe(1);
+});
+
 it('menolak pencairan tanpa rekomendasi Camat', function () {
     jalankanSampai(StatusTransaksi::SpmDiterbitkan);
 
