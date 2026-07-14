@@ -33,8 +33,17 @@ php artisan key:generate
 php artisan migrate --seed    # seed peran RBAC + kerangka COA
 php artisan db:seed --class=DemoSeeder   # opsional: desa demo + 4 user per peran
 npm install && npm run build
-composer run dev              # server + queue + vite
+composer run dev              # macOS/Linux: server + queue + logs(pail) + vite
+composer run dev:win         # Windows: server + queue + vite (tanpa pail — pcntl tak ada di Windows)
 ```
+
+> **Windows**: pakai `composer run dev:win`. Skrip `dev` bawaan Laravel menyertakan
+> `php artisan pail` yang butuh ekstensi `pcntl` (tidak tersedia di Windows); dengan
+> `--kill-others` kegagalan pail ikut mematikan server, queue, dan vite. `dev:win`
+> membuang pail dan memakai `--kill-others-on-fail`.
+>
+> Aplikasi jalan di **http://localhost:8000** (dari `php artisan serve`).
+> `localhost:5173` hanya server aset Vite, bukan halaman aplikasi — jangan dibuka langsung.
 
 Login demo (setelah DemoSeeder): `kades@demo.test`, `sekdes@demo.test`, `kaur@demo.test`,
 `bpd@demo.test` — password semuanya `password`.
