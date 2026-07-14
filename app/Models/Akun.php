@@ -17,7 +17,12 @@ class Akun extends Model
 {
     protected $fillable = ['parent_id', 'kode', 'nama', 'level', 'is_locked'];
 
-    /** Hanya true selama seeder resmi menambahkan kodefikasi (lihat CoaSeeder). */
+    /**
+     * Hanya true selama seeder resmi menambahkan kodefikasi (lihat CoaSeeder).
+     * CATATAN deployment (temuan B-5 audit): flag statis proses-wide — aman
+     * untuk PHP-FPM/queue worker sekuensial, TIDAK aman untuk Octane+Swoole
+     * mode coroutine konkuren.
+     */
     private static bool $penambahanDiizinkan = false;
 
     /** Dipakai seeder resmi COA untuk membuka penambahan kodefikasi sementara. */

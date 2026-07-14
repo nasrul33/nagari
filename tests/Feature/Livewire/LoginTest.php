@@ -76,6 +76,27 @@ it('lockout hanya berlaku per email — akun lain tetap bisa masuk', function ()
     expect(auth()->id())->toBe($lain->id);
 });
 
+it('membendung password spraying — limiter per-IP lintas email', function () {
+    // 20 percobaan gagal dari IP yang sama tersebar ke banyak email
+    foreach (range(1, 20) as $i) {
+        Livewire::test(Login::class)
+            ->set('email', "akun{$i}@contoh.desa.id")
+            ->set('password', 'SprayPassword1')
+            ->call('masuk');
+    }
+
+    // korban baru yang belum pernah dicoba pun ikut terbendung dari IP ini
+    $korban = userDenganPeran(PeranDesa::KaurKeuangan);
+
+    Livewire::test(Login::class)
+        ->set('email', $korban->email)
+        ->set('password', 'password')
+        ->call('masuk')
+        ->assertHasErrors('email');
+
+    expect(auth()->check())->toBeFalse();
+});
+
 it('logout mengakhiri sesi', function () {
     $user = userDenganPeran(PeranDesa::KaurKeuangan);
 

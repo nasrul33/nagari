@@ -148,6 +148,19 @@ sudah ditutup sebelum merge):
       cukup untuk visualisasi, tapi laporan resmi (BKU/Buku Pembantu/LRA) WAJIB aritmetika
       desimal/integer sen, bukan float.
 
+Verifikasi penutupan (security-auditor, commit 4effa05): SEMUA temuan T/DC di atas TERTUTUP.
+Temuan hardening lanjutan (B-series):
+
+- [x] **B-1**: ganti password kini memutus sesi lain (`logoutOtherDevices` + `AuthenticateSession`)
+      — menutup jendela akses operator onboarding pasca serah terima.
+- [x] **B-2**: limiter login kedua per-IP lintas email (20/menit) membendung password spraying.
+- [x] **B-3**: invariant "flag must_change_password hanya di-set pra-login" didokumentasikan
+      di middleware; fitur masa depan yang men-set flag mid-session wajib invalidasi sesi.
+- [x] **B-4**: email onboarding = identifier login, BUKAN mailbox — jangan bangun reset-via-email
+      di atasnya (didokumentasikan di BuatDesaBaru).
+- [x] **B-5**: flag statis (Akun/Transaksi) tidak aman untuk Octane+Swoole coroutine —
+      didokumentasikan; migrasi ke Context bila Octane diadopsi.
+
 ## Urutan eksekusi ringkas
 
 M0 → M1 → M2 → M3 → (M4 menunggu skema API) → M5 (paling akhir) → M6 sebelum go-live nyata.

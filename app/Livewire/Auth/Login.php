@@ -14,6 +14,13 @@ class Login extends Component
     /** Batas percobaan gagal per email+IP sebelum lockout sementara (temuan T-6 audit M2). */
     private const MAKS_PERCOBAAN = 5;
 
+    /**
+     * Batas kedua per-IP lintas email — email perangkat desa dapat dienumerasi
+     * dari kode desa publik, jadi password spraying satu IP harus terbendung
+     * (temuan B-2 audit).
+     */
+    private const MAKS_PERCOBAAN_PER_IP = 20;
+
     private const LOCKOUT_DETIK = 60;
 
     public string $email = '';
@@ -28,9 +35,13 @@ class Login extends Component
         ]);
 
         $kunci = $this->kunciThrottle();
+        $kunciIp = 'login-ip:'.request()->ip();
 
-        if (RateLimiter::tooManyAttempts($kunci, self::MAKS_PERCOBAAN)) {
-            $detik = RateLimiter::availableIn($kunci);
+        if (
+            RateLimiter::tooManyAttempts($kunci, self::MAKS_PERCOBAAN)
+            || RateLimiter::tooManyAttempts($kunciIp, self::MAKS_PERCOBAAN_PER_IP)
+        ) {
+            $detik = max(RateLimiter::availableIn($kunci), RateLimiter::availableIn($kunciIp));
             $this->addError('email', "Terlalu banyak percobaan masuk. Coba lagi dalam {$detik} detik.");
 
             return;
@@ -38,6 +49,7 @@ class Login extends Component
 
         if (! Auth::attempt($kredensial)) {
             RateLimiter::hit($kunci, self::LOCKOUT_DETIK);
+            RateLimiter::hit($kunciIp, self::LOCKOUT_DETIK);
             $this->addError('email', 'Email atau kata sandi salah.');
 
             return;

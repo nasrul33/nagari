@@ -58,6 +58,10 @@ class BuatDesaBaru extends Command
 
         // Domain email berbasis kode_desa (unik nasional) — nama desa sering
         // berulang lintas kabupaten (temuan T-4 audit M2).
+        // PERHATIAN (temuan B-4 audit): alamat ini identifier login semata,
+        // BUKAN mailbox yang bisa menerima surat. Jangan pernah membangun
+        // fitur reset-password-via-email di atasnya tanpa verifikasi
+        // kepemilikan alamat sungguhan.
         $domain = str_replace('.', '-', $kode).'.desa.id';
 
         $emails = collect(PeranDesa::cases())

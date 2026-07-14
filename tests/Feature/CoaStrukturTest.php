@@ -128,4 +128,13 @@ it('menolak level di bawah Rincian Objek (maksimal 5 level)', function () {
         'level' => 6,
         'is_locked' => false,
     ]))->toThrow(ValueError::class); // level 6 tidak ada di enum LevelAkun
+
+    // level enum valid pun tetap ditolak di bawah Rincian Objek (anak() === null)
+    expect(fn () => buatAkun([
+        'parent_id' => $parent->id,
+        'kode' => '4.1.1.01.01.02',
+        'nama' => 'Rincian di bawah Rincian',
+        'level' => LevelAkun::RincianObjek,
+        'is_locked' => false,
+    ]))->toThrow(LogicException::class, 'tidak boleh dilompati');
 });

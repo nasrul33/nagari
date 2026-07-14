@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -31,6 +32,11 @@ class GantiPassword extends Component
             'password' => $this->password,
             'must_change_password' => false,
         ])->save();
+
+        // Temuan B-1 audit: sesi lain (mis. sesi operator onboarding yang
+        // masih memegang password sementara) diputus, sesi ini di-regenerate.
+        Auth::logoutOtherDevices($this->password);
+        session()->regenerate();
 
         session()->flash('sukses', 'Kata sandi berhasil diganti.');
 
