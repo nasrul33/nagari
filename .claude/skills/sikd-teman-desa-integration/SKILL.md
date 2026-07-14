@@ -23,6 +23,19 @@ description: Status dan referensi integrasi ke portal SIKD Teman Desa (Kemenkeu)
 Skema payload, mekanisme autentikasi, rate limit, dan dokumentasi resmi POST API BELUM ada
 di repo ini. Ini BUKAN sesuatu yang boleh ditebak oleh subagent mana pun.
 
+### Hasil riset publik 2026-07-14 (Claude, disetujui user/PM)
+
+- Dokumen publik (ciptadesa.com, portal DJPK) hanya menjelaskan ALUR pemakaian:
+  autentikasi POST API memakai "Service Password" yang disalin dari profil akun
+  SIKD Teman Desa; verifikasi kirim via menu APBDes → Monitoring (status "Dikirim").
+- TIDAK ada spesifikasi endpoint, format payload, maupun struktur isi ZIP yang
+  dipublikasikan — ZIP di-generate internal oleh Siskeudes. Jalur ZIP fallback pun
+  belum bisa diverifikasi dari dokumen publik.
+- Keputusan user/PM 2026-07-14: fondasi schema-agnostic M4 BOLEH dibangun
+  (pelacakan PengirimanSikd, job KirimKeSikd + retry/backoff, boundary
+  PenyusunPayloadSikd yang melempar SkemaSikdBelumTersediaException, config
+  sikd.enabled=false). Payload/pengiriman nyata TETAP BLOCKED.
+
 ## Aksi yang diperlukan (dari user/PM, bukan dari subagent)
 
 1. Ajukan permintaan akses/dokumentasi API resmi ke Kemenkeu/DJPK atau BPKP.

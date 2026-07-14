@@ -86,6 +86,14 @@ dokumen Permendagri/BPKP sebelum finalisasi modul ini.
 
 **JANGAN MULAI sebelum skema API resmi (payload, autentikasi) didapat dari Kemenkeu/DJPK.**
 
+**Status 2026-07-14 — fondasi schema-agnostic SELESAI (disetujui user/PM):** model
+`PengirimanSikd` (ter-scope tenant), job `KirimKeSikd` (retry 5x backoff bertingkat, pola
+tenant-context T-9), boundary `PenyusunPayloadSikd` yang melempar
+`SkemaSikdBelumTersediaException`, `config/sikd.php` dengan `enabled=false`. Riset publik:
+tidak ada skema payload/endpoint/isi-ZIP yang dipublikasikan — implementasi payload TETAP
+BLOCKED sampai dokumen resmi masuk skill. Begitu skema datang: ganti binding penjaga di
+`AppServiceProvider`, isi pengiriman HTTP/ZIP di job, nyalakan flag.
+
 Tugas (setelah skema didapat):
 - Job queue untuk POST API dengan retry/backoff.
 - Fallback generator ZIP manual untuk kondisi internet tidak stabil.
@@ -140,8 +148,10 @@ sudah ditutup sebelum merge):
       membungkus `handle()` dalam transaksi luar, atau buat log tahan rollback.
 - [x] **DC-1**: guard pembuatan Akun pakai `runningInConsole()` (true juga di queue worker) —
       pertimbangkan flag eksplisit ala `denganTransisiDiizinkan()`.
-- [ ] **T-9** (wajib sebelum M4/M5): pola "tenant context" eksplisit untuk queue job —
-      job wajib menerima `desa_id`, scope mati di konteks console.
+- [x] **T-9** (wajib sebelum M4/M5): pola "tenant context" eksplisit untuk queue job —
+      diimplementasikan di `KirimKeSikd` (job menerima id + desa_id eksplisit, memuat ulang
+      record dengan constraint desa_id manual, mismatch gagal keras). Pola yang sama wajib
+      dipakai job M5 offline-sync kelak.
 - [ ] **T-10** (wajib saat UI audit dibuat): halaman riwayat audit owen-it harus di-scope
       per tenant via join ke model auditable.
 - [ ] **M3-T3** (wajib saat modul laporan resmi dimulai): agregasi dashboard memakai float —
