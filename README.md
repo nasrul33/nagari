@@ -13,7 +13,7 @@ dengan subagent & skill domain di `.claude/`.
 |---|---|
 | Prasyarat — scaffold Laravel + git + paket inti | ✅ Selesai |
 | M0 — Fondasi data & COA (single-tenant) | ✅ Struktur & guard selesai; **kode rekening level 2–5 menunggu lampiran resmi Permendagri** |
-| M1 — State machine SPP → SPM → Pencairan | ✅ Backend + audit trail + test; UI Livewire belum |
+| M1 — State machine SPP → SPM → Pencairan | ✅ Selesai — backend + audit trail + UI Livewire (login, daftar/buat/detail transaksi, panel aksi per peran) |
 | M2 — Multi-tenancy | ⬜ |
 | M3 — Dashboard & analitik | ⬜ |
 | M4 — Integrasi SIKD Teman Desa | ⛔ Menunggu skema API resmi Kemenkeu/DJPK |
@@ -47,8 +47,8 @@ Login demo (setelah DemoSeeder): `kades@demo.test`, `sekdes@demo.test`, `kaur@de
 
 Suite menutup: invariant struktur COA 5 level (Permendagri 20/2018), penguncian kodefikasi
 resmi, idempotensi seeder, RBAC 4 peran, dan **seluruh transisi state machine SPP→SPM→pencairan**
-termasuk penolakan peran salah, state yang dilompati, dan pencatatan percobaan gagal di
-`transaksi_logs`.
+— di lapisan Action maupun lewat komponen Livewire — termasuk penolakan peran salah, state
+yang dilompati, isolasi antar desa, dan pencatatan percobaan gagal di `transaksi_logs`.
 
 ## Peta kode domain
 
