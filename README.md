@@ -17,7 +17,7 @@ dengan subagent & skill domain di `.claude/`.
 | M2 — Multi-tenancy | ✅ Selesai — global scope `desa_id` (trait `MilikDesa`), guard lintas desa di Action, onboarding `php artisan desa:baru` |
 | M3 — Dashboard & analitik | ✅ Dashboard realisasi + grafik tren (Chart.js); **export BKU/Buku Pembantu/LRA menunggu template resmi** |
 | M4 — Integrasi SIKD Teman Desa | ⛔ Menunggu skema API resmi Kemenkeu/DJPK |
-| M5 — Offline-first | ⛔ Menunggu keputusan resolusi konflik |
+| M5 — Offline-first | ✅ Entri draft offline (IndexedDB + service worker) + sync idempoten; konflik = locking state approval |
 | M6 — Hardening UU PDP | ⬜ |
 
 Detail milestone: [PLAN.md](PLAN.md). Konteks proyek & keputusan arsitektur: [CLAUDE.md](CLAUDE.md).

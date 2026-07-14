@@ -47,7 +47,12 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
 
 ## Keputusan yang masih terbuka (jangan asumsikan, tanya user/PM dulu)
 
-1. Aturan resolusi konflik sinkronisasi offline (last-write-wins vs manual merge vs locking).
+1. ~~Aturan resolusi konflik sinkronisasi offline~~ — **DIPUTUSKAN 2026-07-15 (user/PM):
+   locking berbasis state approval.** Offline hanya boleh membuat draft baru & mengedit draft
+   sendiri yang belum diajukan; transaksi yang sudah masuk alur SPP/SPM terkunci dari edit
+   offline. UUID klien membuat sync idempoten. Konflik dua perangkat atas draft yang sama:
+   versi terbaru (client_updated_at) menang, yang kalah dicatat di `sinkronisasi_logs`.
+   Diimplementasikan di M5 (lihat PLAN.md M5 + SinkronkanDraftOffline).
 2. Model harga & badan hukum penyedia.
 3. Skema API SIKD Teman Desa (menunggu dokumen resmi Kemenkeu).
 4. Status pendaftaran sebagai Pengendali Data per UU PDP (perlu konsultasi legal).
@@ -63,7 +68,10 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
    pengeluaran (SPP→SPM→pencairan); saat ini transaksi pendapatan ikut memakai enum status
    yang sama, dan dashboard menghitung "realisasi pendapatan" = status dicairkan/selesai.
    Perlu keputusan PM: apakah pendapatan butuh state machine sendiri (terima/setor) —
-   temuan T2 review domain-compliance atas commit 59d99a5.
+   temuan T2 review domain-compliance atas commit 59d99a5. CATATAN M5: jalur sync offline
+   kini juga bisa melahirkan draft berakun pendapatan; bila #7 diputuskan pendapatan butuh
+   siklus terima/setor terpisah, `SinkronkanDraftOffline` wajib menolak/mengarahkan akun
+   pendapatan (temuan review domain-compliance atas commit b6596d9).
 
 ## Referensi
 

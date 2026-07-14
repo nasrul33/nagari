@@ -25,7 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Endpoint sinkronisasi offline dipanggil via fetch dan menuntut respons
+        // JSON (401/422), bukan redirect HTML — sertakan sync/* selain api/*.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('sync/*'),
         );
     })->create();

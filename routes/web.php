@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\SyncController;
 use App\Livewire\Auth\GantiPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Dashboard;
 use App\Livewire\Transaksi\BuatTransaksi;
 use App\Livewire\Transaksi\DaftarTransaksi;
 use App\Livewire\Transaksi\DetailTransaksi;
+use App\Livewire\Transaksi\OfflineDraft;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +22,14 @@ Route::middleware(['auth', 'wajib.ganti.password'])->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
     Route::get('/transaksi', DaftarTransaksi::class)->name('transaksi.index');
     Route::get('/transaksi/baru', BuatTransaksi::class)->name('transaksi.buat');
+    Route::get('/transaksi-offline', OfflineDraft::class)->name('transaksi.offline');
     Route::get('/transaksi/{transaksi}', DetailTransaksi::class)->name('transaksi.detail');
+
+    // Endpoint sinkronisasi antrian draft offline (dipanggil service worker/JS).
+    // Throttle mencegah banjir batch dari kredensial yang bocor (temuan T-4 audit).
+    Route::post('/sync/transaksi', [SyncController::class, 'transaksi'])
+        ->middleware('throttle:30,1')
+        ->name('sync.transaksi');
 
     Route::post('/logout', function () {
         Auth::logout();
