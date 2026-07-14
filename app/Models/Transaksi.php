@@ -14,11 +14,38 @@ class Transaksi extends Model implements AuditableContract
 {
     use Auditable, HasFactory;
 
+    /** 'status' sengaja TIDAK fillable — perubahan state hanya lewat Action TransisiWorkflow. */
     protected $fillable = [
         'desa_id', 'tahun_anggaran_id', 'akun_id', 'apbdes_id',
-        'tanggal', 'uraian', 'jumlah', 'status',
+        'tanggal', 'uraian', 'jumlah',
         'nomor_spp', 'nomor_spm', 'spm_ditandatangani_oleh', 'nomor_rekomendasi_camat',
     ];
+
+    /** Hanya true selama TransisiWorkflow::handle() menyimpan transisi yang sah. */
+    private static bool $transisiDiizinkan = false;
+
+    protected static function booted(): void
+    {
+        static::updating(function (Transaksi $transaksi) {
+            if ($transaksi->isDirty('status') && ! self::$transisiDiizinkan) {
+                throw new \LogicException(
+                    'Status transaksi hanya boleh diubah melalui Action alur SPP/SPM (TransisiWorkflow) — state machine tidak boleh dilewati.'
+                );
+            }
+        });
+    }
+
+    /** Dipakai TransisiWorkflow untuk menyimpan transisi state yang sudah tervalidasi. */
+    public static function denganTransisiDiizinkan(callable $callback): mixed
+    {
+        self::$transisiDiizinkan = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$transisiDiizinkan = false;
+        }
+    }
 
     protected function casts(): array
     {

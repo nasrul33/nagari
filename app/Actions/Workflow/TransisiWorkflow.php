@@ -58,10 +58,12 @@ abstract class TransisiWorkflow
         $this->validasi($transaksi, $pelaku, $atribut);
 
         return DB::transaction(function () use ($transaksi, $pelaku, $atribut) {
-            $transaksi
-                ->fill($this->atributTersimpan($atribut))
-                ->forceFill(['status' => $this->ke()])
-                ->save();
+            Transaksi::denganTransisiDiizinkan(function () use ($transaksi, $atribut) {
+                $transaksi
+                    ->fill($this->atributTersimpan($atribut))
+                    ->forceFill(['status' => $this->ke()])
+                    ->save();
+            });
 
             $this->catat($transaksi, $pelaku, berhasil: true);
 

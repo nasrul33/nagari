@@ -51,6 +51,10 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
 2. Model harga & badan hukum penyedia.
 3. Skema API SIKD Teman Desa (menunggu dokumen resmi Kemenkeu).
 4. Status pendaftaran sebagai Pengendali Data per UU PDP (perlu konsultasi legal).
+5. Siapa yang berwenang memicu state "Selesai" di alur SPP/SPM — skill spp-spm-workflow tidak
+   menetapkannya. Implementasi saat ini mengasumsikan Kaur Keuangan (fungsi penatausahaan);
+   konfirmasi ke user/PM, terutama terkait struktur PKPKD/PPKD 2026 (temuan T4 review
+   domain-compliance atas commit c275f62).
 
 ## Referensi
 

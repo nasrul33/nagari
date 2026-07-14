@@ -28,6 +28,14 @@ class Akun extends Model
     protected static function booted(): void
     {
         static::creating(function (Akun $akun) {
+            // Kodefikasi COA di-seed, bukan dibuat custom per tenant (CLAUDE.md).
+            // Penambahan hanya sah dari konteks console (seeder/artisan), bukan request web.
+            if (! app()->runningInConsole()) {
+                throw new LogicException(
+                    'Kodefikasi COA hanya boleh ditambahkan melalui seeder resmi, bukan dari aplikasi.'
+                );
+            }
+
             $akun->validasiStruktur();
         });
 

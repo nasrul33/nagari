@@ -85,11 +85,13 @@ dataset('transisi dengan peran salah', [
     'verifikasi oleh Kades' => [VerifikasiSpp::class, StatusTransaksi::SppDiajukan, 'kades', []],
     'verifikasi oleh BPD' => [VerifikasiSpp::class, StatusTransaksi::SppDiajukan, 'bpd', []],
     'terbitkan SPM oleh Kaur' => [TerbitkanSpm::class, StatusTransaksi::Diverifikasi, 'kaur', ['nomor_spm' => 'X']],
+    'terbitkan SPM oleh Kades' => [TerbitkanSpm::class, StatusTransaksi::Diverifikasi, 'kades', ['nomor_spm' => 'X']],
     'terbitkan SPM oleh BPD' => [TerbitkanSpm::class, StatusTransaksi::Diverifikasi, 'bpd', ['nomor_spm' => 'X']],
     'cairkan oleh Sekdes' => [CairkanDana::class, StatusTransaksi::SpmDiterbitkan, 'sekdes', ['nomor_rekomendasi_camat' => 'X']],
     'cairkan oleh Kades' => [CairkanDana::class, StatusTransaksi::SpmDiterbitkan, 'kades', ['nomor_rekomendasi_camat' => 'X']],
     'cairkan oleh BPD' => [CairkanDana::class, StatusTransaksi::SpmDiterbitkan, 'bpd', ['nomor_rekomendasi_camat' => 'X']],
     'selesaikan oleh Sekdes' => [SelesaikanTransaksi::class, StatusTransaksi::Dicairkan, 'sekdes', []],
+    'selesaikan oleh Kades' => [SelesaikanTransaksi::class, StatusTransaksi::Dicairkan, 'kades', []],
     'selesaikan oleh BPD' => [SelesaikanTransaksi::class, StatusTransaksi::Dicairkan, 'bpd', []],
 ]);
 
@@ -156,6 +158,27 @@ it('menolak pencairan tanpa rekomendasi Camat', function () {
 
     expect(fn () => app(CairkanDana::class)->handle($this->transaksi, $this->kaur))
         ->toThrow(TransisiDitolakException::class, 'rekomendasi Camat');
+});
+
+it('menolak perubahan status langsung di luar Action workflow', function () {
+    expect(fn () => $this->transaksi->forceFill(['status' => StatusTransaksi::Dicairkan])->save())
+        ->toThrow(LogicException::class, 'TransisiWorkflow');
+
+    // mass assignment juga tidak mempan — status bukan atribut fillable
+    $this->transaksi->refresh()->update(['status' => StatusTransaksi::Dicairkan]);
+
+    expect($this->transaksi->refresh()->status)->toBe(StatusTransaksi::Draft);
+});
+
+it('log transisi append-only — tidak bisa diubah atau dihapus', function () {
+    jalankanSampai(StatusTransaksi::SppDiajukan);
+
+    $log = $this->transaksi->logs()->firstOrFail();
+
+    expect(fn () => $log->update(['berhasil' => false]))
+        ->toThrow(LogicException::class, 'append-only')
+        ->and(fn () => $log->delete())
+        ->toThrow(LogicException::class, 'append-only');
 });
 
 it('merekam perubahan status di audit trail owen-it', function () {
