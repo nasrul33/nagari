@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StatusTransaksi;
+use App\Models\Concerns\MilikDesa;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use OwenIt\Auditing\Contracts\Auditable as AuditableContract;
 
 class Transaksi extends Model implements AuditableContract
 {
-    use Auditable, HasFactory;
+    use Auditable, HasFactory, MilikDesa;
 
     /** 'status' sengaja TIDAK fillable — perubahan state hanya lewat Action TransisiWorkflow. */
     protected $fillable = [
@@ -32,6 +33,14 @@ class Transaksi extends Model implements AuditableContract
                     'Status transaksi hanya boleh diubah melalui Action alur SPP/SPM (TransisiWorkflow) — state machine tidak boleh dilewati.'
                 );
             }
+        });
+
+        // Audit trail Inspektorat/BPKP: transaksi beserta jejaknya tidak boleh
+        // dihapus. Pembatalan kelak dimodelkan sebagai state di workflow.
+        static::deleting(function () {
+            throw new \LogicException(
+                'Transaksi tidak boleh dihapus — jejak transisi dan audit wajib dipertahankan.'
+            );
         });
     }
 
@@ -54,11 +63,6 @@ class Transaksi extends Model implements AuditableContract
             'jumlah' => 'decimal:2',
             'status' => StatusTransaksi::class,
         ];
-    }
-
-    public function desa(): BelongsTo
-    {
-        return $this->belongsTo(Desa::class);
     }
 
     public function tahunAnggaran(): BelongsTo

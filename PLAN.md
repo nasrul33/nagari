@@ -125,6 +125,26 @@ Subagent terlibat: `security-auditor`.
 
 ---
 
+## Tindak lanjut audit M2 (temuan non-blocking, kerjakan segera)
+
+Dari review security-auditor + domain-compliance atas commit M2 (temuan blocking T-1/T-2/T-5
+sudah ditutup sebelum merge):
+
+- [ ] **T-4**: email onboarding `desa:baru` berbasis slug nama — tabrakan untuk nama desa
+      yang sama lintas kabupaten; pakai kode_desa di domain email + pesan error anggun.
+- [ ] **T-6**: rate limiting login (RateLimiter per email+IP) + kebijakan kekuatan password.
+- [ ] **T-8**: kolom `must_change_password` + middleware pemaksa ganti password login pertama.
+- [ ] **T-3**: validasi konsistensi `Apbdes.desa_id` vs desa tahun anggaran induk (lempar, bukan diam).
+- [ ] **T-7**: migration NOT NULL untuk `apbdes.desa_id` setelah backfill terverifikasi.
+- [ ] **DC-3**: log penolakan transisi ditulis di luar DB::transaction — dokumentasikan larangan
+      membungkus `handle()` dalam transaksi luar, atau buat log tahan rollback.
+- [ ] **DC-1**: guard pembuatan Akun pakai `runningInConsole()` (true juga di queue worker) —
+      pertimbangkan flag eksplisit ala `denganTransisiDiizinkan()`.
+- [ ] **T-9** (wajib sebelum M4/M5): pola "tenant context" eksplisit untuk queue job —
+      job wajib menerima `desa_id`, scope mati di konteks console.
+- [ ] **T-10** (wajib saat UI audit dibuat): halaman riwayat audit owen-it harus di-scope
+      per tenant via join ke model auditable.
+
 ## Urutan eksekusi ringkas
 
 M0 → M1 → M2 → M3 → (M4 menunggu skema API) → M5 (paling akhir) → M6 sebelum go-live nyata.

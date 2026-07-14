@@ -41,6 +41,15 @@ abstract class TransisiWorkflow
     {
         $this->statusAsal = $transaksi->status;
 
+        // Isolasi tenant: pelaku wajib perangkat desa pemilik transaksi,
+        // apa pun perannya — global scope UI bukan satu-satunya pagar.
+        if ($pelaku->desa_id !== $transaksi->desa_id) {
+            $this->tolak($transaksi, $pelaku, sprintf(
+                'Isolasi desa dilanggar: pelaku bukan perangkat desa pemilik transaksi (transisi %s → %s).',
+                $this->dari()->value, $this->ke()->value,
+            ));
+        }
+
         if ($transaksi->status !== $this->dari()) {
             $this->tolak($transaksi, $pelaku, sprintf(
                 'State tidak boleh dilompati: transisi %s → %s tidak sah dari state %s.',
