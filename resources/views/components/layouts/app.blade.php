@@ -10,9 +10,11 @@
     <nav class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
             <div class="flex items-center gap-6">
-                <a href="{{ route('transaksi.index') }}" class="text-lg font-semibold text-emerald-700">
+                <a href="{{ route('dashboard') }}" class="text-lg font-semibold text-emerald-700">
                     Keuangan Desa
                 </a>
+                <a href="{{ route('dashboard') }}"
+                   class="text-sm text-slate-600 hover:text-emerald-700">Dashboard</a>
                 <a href="{{ route('transaksi.index') }}"
                    class="text-sm text-slate-600 hover:text-emerald-700">Transaksi</a>
             </div>

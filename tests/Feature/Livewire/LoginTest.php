@@ -12,7 +12,7 @@ it('mengalihkan tamu yang membuka halaman transaksi ke login', function () {
     $this->get(route('transaksi.index'))->assertRedirect(route('login'));
 });
 
-it('login dengan kredensial benar diarahkan ke daftar transaksi', function () {
+it('login dengan kredensial benar diarahkan ke dashboard', function () {
     $user = userDenganPeran(PeranDesa::KaurKeuangan);
 
     Livewire::test(Login::class)
@@ -20,7 +20,7 @@ it('login dengan kredensial benar diarahkan ke daftar transaksi', function () {
         ->set('password', 'password')
         ->call('masuk')
         ->assertHasNoErrors()
-        ->assertRedirect(route('transaksi.index'));
+        ->assertRedirect(route('dashboard'));
 
     expect(auth()->id())->toBe($user->id);
 });
