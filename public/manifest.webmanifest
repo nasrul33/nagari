@@ -1,0 +1,16 @@
+{
+    "name": "Keuangan Desa",
+    "short_name": "Keuangan Desa",
+    "description": "Pengelolaan keuangan desa/nagari — mendukung entri draft offline.",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#f1f5f9",
+    "theme_color": "#047857",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "48x48",
+            "type": "image/x-icon"
+        }
+    ]
+}

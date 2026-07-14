@@ -107,16 +107,20 @@ Subagent terlibat: `integration-engineer`, `qa-agent` (test retry & fallback), `
 
 **Tujuan**: Kaur Keuangan bisa input draft transaksi tanpa internet, sync otomatis saat online.
 
-**Butuh keputusan resolusi konflik dulu (lihat CLAUDE.md) sebelum subagent mulai desain.**
+**Resolusi konflik DIPUTUSKAN 2026-07-15: locking berbasis state approval (CLAUDE.md #1).**
 
-Tugas:
-- Service worker + IndexedDB untuk antrian draft transaksi.
-- Endpoint API sync + logic resolusi konflik sesuai keputusan yang sudah diambil.
-- UI indikator status online/offline & antrian belum tersinkron.
+**Status: SELESAI.** Diimplementasikan:
+- IndexedDB antrian draft + service worker (`public/sw.js`, network-first navigasi, cache-first
+  aset) + manifest PWA; entri via halaman `/transaksi-offline` (Alpine, jalan offline).
+- Endpoint `POST /sync/transaksi` (session auth, CSRF, Kaur only) → `SinkronkanDraftOffline`:
+  UUID klien = idempotensi; draft baru dibuat, draft yang sudah masuk alur SPP/SPM TERKUNCI,
+  konflik dua perangkat diselesaikan "client_updated_at terbaru menang" + dicatat di
+  `sinkronisasi_logs` (append-only, per tenant).
+- Indikator online/offline di navbar + daftar antrian belum tersinkron + ringkasan hasil sync.
+- Verifikasi end-to-end di browser sungguhan: entri → antrian → auto-sync → draft dibuat di
+  server (tanpa error konsol). 21 test Pest (aturan sync + endpoint + akses halaman).
 
-Subagent terlibat: `offline-sync-engineer`, `qa-agent` (test skenario konflik), `security-auditor`.
-
-Ini milestone paling kompleks — kerjakan paling akhir, setelah alur online (M0-M4) benar-benar stabil.
+Catatan pola: job/endpoint sync memakai pola tenant-context yang sama dengan M4 (T-9).
 
 ---
 

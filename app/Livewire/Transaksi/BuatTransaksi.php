@@ -6,6 +6,7 @@ use App\Enums\PeranDesa;
 use App\Models\Akun;
 use App\Models\TahunAnggaran;
 use App\Models\Transaksi;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -46,6 +47,8 @@ class BuatTransaksi extends Component
         $transaksi = Transaksi::create([
             ...$data,
             'desa_id' => auth()->user()->desa_id,
+            'uuid' => (string) Str::uuid(),
+            'client_updated_at' => now(),
         ]);
 
         session()->flash('sukses', 'Transaksi draft berhasil dibuat.');

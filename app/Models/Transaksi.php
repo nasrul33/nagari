@@ -20,6 +20,7 @@ class Transaksi extends Model implements AuditableContract
         'desa_id', 'tahun_anggaran_id', 'akun_id', 'apbdes_id',
         'tanggal', 'uraian', 'jumlah',
         'nomor_spp', 'nomor_spm', 'spm_ditandatangani_oleh', 'nomor_rekomendasi_camat',
+        'uuid', 'client_updated_at',
     ];
 
     /**
@@ -37,6 +38,11 @@ class Transaksi extends Model implements AuditableContract
                 throw new \LogicException(
                     'Status transaksi hanya boleh diubah melalui Action alur SPP/SPM (TransisiWorkflow) — state machine tidak boleh dilewati.'
                 );
+            }
+
+            // uuid = kunci idempotensi klien; tidak boleh berubah sekali diset.
+            if ($transaksi->isDirty('uuid') && $transaksi->getOriginal('uuid') !== null) {
+                throw new \LogicException('UUID transaksi (kunci idempotensi sync) tidak boleh diubah.');
             }
         });
 
@@ -67,6 +73,10 @@ class Transaksi extends Model implements AuditableContract
             'tanggal' => 'date',
             'jumlah' => 'decimal:2',
             'status' => StatusTransaksi::class,
+            // client_updated_at SENGAJA tidak di-cast datetime: cast memangkas
+            // sub-detik sehingga item ms yang dikirim ulang tampak "lebih baru"
+            // dan merusak idempotensi. Disimpan sebagai string ISO mentah,
+            // dibandingkan via Carbon::parse di SinkronkanDraftOffline.
         ];
     }
 
