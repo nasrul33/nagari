@@ -59,6 +59,11 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
    penandatangannya (dipilih Sekdes, tanda tangan fisik diasumsikan terjadi di luar sistem).
    Jika yang dimaksud persetujuan digital, perlu langkah aksi eksplisit oleh Kades di sistem —
    jangan diputuskan sepihak (temuan #4 review domain-compliance atas commit 0c24b1a).
+7. Siklus status transaksi PENDAPATAN: skill spp-spm-workflow hanya mendefinisikan siklus
+   pengeluaran (SPP→SPM→pencairan); saat ini transaksi pendapatan ikut memakai enum status
+   yang sama, dan dashboard menghitung "realisasi pendapatan" = status dicairkan/selesai.
+   Perlu keputusan PM: apakah pendapatan butuh state machine sendiri (terima/setor) —
+   temuan T2 review domain-compliance atas commit 59d99a5.
 
 ## Referensi
 

@@ -97,6 +97,18 @@ it('menyusun tren bulanan realisasi untuk grafik', function () {
             && array_sum($tren['belanja']) === 1_000_000.0);
 });
 
+it('realisasi di luar akar Pendapatan/Belanja tidak dibuang diam-diam', function () {
+    $akunAset = Akun::where('kode', '1')->firstOrFail();
+    transaksiDashboard($this->desa, $this->ta, $akunAset, StatusTransaksi::Selesai, 3_000_000);
+
+    Livewire::actingAs($this->kaur)
+        ->test(Dashboard::class)
+        ->assertViewHas('totalLainnya', 3_000_000.0)
+        ->assertViewHas('totalPendapatan', 0.0)
+        ->assertViewHas('totalBelanja', 0.0)
+        ->assertSee('di luar');
+});
+
 it('tidak mencampur angka desa lain (isolasi tenant)', function () {
     $desaB = Desa::factory()->create();
     $taB = TahunAnggaran::factory()->for($desaB)->create(['tahun' => 2026]);

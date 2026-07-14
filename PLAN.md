@@ -144,6 +144,9 @@ sudah ditutup sebelum merge):
       job wajib menerima `desa_id`, scope mati di konteks console.
 - [ ] **T-10** (wajib saat UI audit dibuat): halaman riwayat audit owen-it harus di-scope
       per tenant via join ke model auditable.
+- [ ] **M3-T3** (wajib saat modul laporan resmi dimulai): agregasi dashboard memakai float —
+      cukup untuk visualisasi, tapi laporan resmi (BKU/Buku Pembantu/LRA) WAJIB aritmetika
+      desimal/integer sen, bukan float.
 
 ## Urutan eksekusi ringkas
 

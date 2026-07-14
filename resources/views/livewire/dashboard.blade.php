@@ -101,6 +101,14 @@
         </div>
     </div>
 
+    @if ($totalLainnya > 0)
+        <div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Ada realisasi Rp {{ number_format($totalLainnya, 0, ',', '.') }} pada akun di luar
+            kategori Pendapatan/Belanja (mis. Aset/Kewajiban/Pembiayaan) yang belum masuk
+            ringkasan di atas — periksa kategorisasi COA transaksi terkait.
+        </div>
+    @endif
+
     <p class="text-xs text-slate-400">
         Realisasi dihitung dari transaksi berstatus Dicairkan/Selesai (basis kas pencairan).
         Kategori mengikuti akar bagan akun Permendagri (4 = Pendapatan, 5 = Belanja).

@@ -120,6 +120,10 @@ class Dashboard extends Component
             'tahunAnggarans' => TahunAnggaran::orderByDesc('tahun')->get(),
             'totalPendapatan' => $realisasiPerAkar->get('4', 0.0),
             'totalBelanja' => $realisasiPerAkar->get('5', 0.0),
+            // Realisasi di luar akar 4/5 TIDAK dibuang diam-diam (temuan T1
+            // review M3) — ditampilkan agar keputusan kategorisasi dibuat
+            // eksplisit saat COA level 2-5 resmi masuk.
+            'totalLainnya' => $realisasiPerAkar->except(['4', '5'])->sum(),
             'anggaranBelanja' => $anggaranPerAkar->get('5', 0.0),
             'anggaranPendapatan' => $anggaranPerAkar->get('4', 0.0),
             'perStatus' => $transaksi->countBy(fn (Transaksi $t) => $t->status->value),
