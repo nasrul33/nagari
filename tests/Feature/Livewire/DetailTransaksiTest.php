@@ -56,12 +56,15 @@ function majukanKe(StatusTransaksi $target): void
 
 // ---------------------------------------------------------------- akses
 
-it('menolak akses detail transaksi desa lain', function () {
+it('menolak akses detail transaksi desa lain (404 dari global scope)', function () {
     $orangLuar = userDenganPeran(PeranDesa::KaurKeuangan, Desa::factory()->create());
 
+    // Global scope M2 membuat transaksi desa lain tak terlihat sejak route
+    // model binding — 404, bukan 403 (guard 403 di mount tetap ada sebagai
+    // lapisan kedua bila scope suatu saat dilonggarkan).
     $this->actingAs($orangLuar)
         ->get(route('transaksi.detail', $this->transaksi))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 it('BPD bisa melihat detail (read-only) tanpa tombol aksi', function () {

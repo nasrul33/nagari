@@ -2,21 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MilikDesa;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TahunAnggaran extends Model
 {
-    use HasFactory;
+    use HasFactory, MilikDesa;
 
     protected $fillable = ['desa_id', 'tahun', 'status'];
-
-    public function desa(): BelongsTo
-    {
-        return $this->belongsTo(Desa::class);
-    }
 
     public function apbdes(): HasMany
     {
