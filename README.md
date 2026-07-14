@@ -14,7 +14,7 @@ dengan subagent & skill domain di `.claude/`.
 | Prasyarat — scaffold Laravel + git + paket inti | ✅ Selesai |
 | M0 — Fondasi data & COA (single-tenant) | ✅ Struktur & guard selesai; **kode rekening level 2–5 menunggu lampiran resmi Permendagri** |
 | M1 — State machine SPP → SPM → Pencairan | ✅ Selesai — backend + audit trail + UI Livewire (login, daftar/buat/detail transaksi, panel aksi per peran) |
-| M2 — Multi-tenancy | ⬜ |
+| M2 — Multi-tenancy | ✅ Selesai — global scope `desa_id` (trait `MilikDesa`), guard lintas desa di Action, onboarding `php artisan desa:baru` |
 | M3 — Dashboard & analitik | ⬜ |
 | M4 — Integrasi SIKD Teman Desa | ⛔ Menunggu skema API resmi Kemenkeu/DJPK |
 | M5 — Offline-first | ⛔ Menunggu keputusan resolusi konflik |
@@ -48,6 +48,17 @@ composer run dev:win         # Windows: server + queue + vite (tanpa pail — pc
 Login demo (setelah DemoSeeder): `kades@demo.test`, `sekdes@demo.test`, `kaur@demo.test`,
 `bpd@demo.test` — password semuanya `password`.
 
+**Onboarding desa (tenant) baru:**
+
+```bash
+php artisan desa:baru --kode=13.01.02.2003 --nama="Nagari Baru" \
+  --kecamatan="..." --kabupaten="..." --provinsi="..."
+```
+
+Membuat desa + tahun anggaran aktif + 4 akun perangkat (password acak ditampilkan sekali).
+Tenant = desa; semua data ter-scope `desa_id` otomatis (trait `MilikDesa`). COA global,
+tidak digandakan per tenant.
+
 ## Test
 
 ```bash
@@ -64,8 +75,11 @@ yang dilompati, isolasi antar desa, dan pencatatan percobaan gagal di `transaksi
 ```
 app/Enums/            LevelAkun (5 level COA), StatusTransaksi (state machine), PeranDesa
 app/Models/           Desa, TahunAnggaran, Akun (COA + guard), Apbdes, Transaksi (auditable), TransaksiLog
+app/Models/Concerns/  MilikDesa — global scope multi-tenant (tenant = desa)
 app/Actions/Workflow/ TransisiWorkflow (kerangka) + AjukanSpp, VerifikasiSpp, TerbitkanSpm,
                       CairkanDana, SelesaikanTransaksi
+app/Livewire/         Auth\Login; Transaksi\{DaftarTransaksi, BuatTransaksi, DetailTransaksi}
+app/Console/Commands/ BuatDesaBaru (onboarding tenant: desa:baru)
 database/seeders/     PeranSeeder, CoaSeeder (kerangka level 1), DemoSeeder (dev only)
 .claude/              subagent (domain-compliance, backend-builder, dst.) + skill domain
 ```

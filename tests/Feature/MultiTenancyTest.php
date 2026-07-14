@@ -9,8 +9,11 @@ use App\Models\Apbdes;
 use App\Models\Desa;
 use App\Models\TahunAnggaran;
 use App\Models\Transaksi;
+use App\Models\User;
 use Database\Seeders\CoaSeeder;
 use Database\Seeders\PeranSeeder;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 /*
  * Kriteria selesai M2 (PLAN.md): user tenant A tidak bisa akses data
@@ -106,4 +109,39 @@ it('endpoint detail transaksi desa lain menghasilkan 404 (bukan bocor)', functio
     $this->actingAs($this->kaurA)
         ->get(route('transaksi.detail', $this->transaksiB))
         ->assertNotFound();
+});
+
+it('menolak keras injeksi desa_id tenant lain via mass assignment', function () {
+    $this->actingAs($this->kaurA);
+
+    expect(fn () => TahunAnggaran::create([
+        'desa_id' => $this->desaB->id, // suntikan lintas tenant
+        'tahun' => 2031,
+        'status' => 'draft',
+    ]))->toThrow(LogicException::class, 'Isolasi desa');
+
+    expect(TahunAnggaran::withoutGlobalScope('desa')->where('tahun', 2031)->exists())->toBeFalse();
+});
+
+it('user login tanpa desa_id tidak melihat data tenant mana pun (fail-closed)', function () {
+    $tanpaDesa = User::factory()->create(['desa_id' => null]);
+
+    $this->actingAs($tanpaDesa);
+
+    expect(Transaksi::count())->toBe(0)
+        ->and(TahunAnggaran::count())->toBe(0)
+        ->and(Transaksi::find($this->transaksiA->id))->toBeNull();
+});
+
+it('transaksi tidak bisa dihapus — jejak log audit dipertahankan', function () {
+    app(AjukanSpp::class)->handle($this->transaksiA, $this->kaurA, ['nomor_spp' => 'SPP-1']);
+
+    expect(fn () => $this->transaksiA->delete())
+        ->toThrow(LogicException::class, 'tidak boleh dihapus');
+
+    // kaskade DB juga sudah diganti restrict — delete raw pun gagal
+    expect(fn () => DB::table('transaksis')->where('id', $this->transaksiA->id)->delete())
+        ->toThrow(QueryException::class);
+
+    expect($this->transaksiA->logs()->count())->toBe(1);
 });

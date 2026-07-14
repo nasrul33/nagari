@@ -34,6 +34,14 @@ class Transaksi extends Model implements AuditableContract
                 );
             }
         });
+
+        // Audit trail Inspektorat/BPKP: transaksi beserta jejaknya tidak boleh
+        // dihapus. Pembatalan kelak dimodelkan sebagai state di workflow.
+        static::deleting(function () {
+            throw new \LogicException(
+                'Transaksi tidak boleh dihapus — jejak transisi dan audit wajib dipertahankan.'
+            );
+        });
     }
 
     /** Dipakai TransisiWorkflow untuk menyimpan transisi state yang sudah tervalidasi. */
