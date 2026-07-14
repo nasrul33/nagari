@@ -40,6 +40,10 @@ class TerbitkanSpm extends TransisiWorkflow
         if (! $penandatangan instanceof User || ! $penandatangan->hasRole(PeranDesa::KepalaDesa->value)) {
             $this->tolak($transaksi, $pelaku, 'SPM wajib ditandatangani user ber-peran Kepala Desa.');
         }
+
+        if ($penandatangan->desa_id !== $transaksi->desa_id) {
+            $this->tolak($transaksi, $pelaku, 'Penandatangan SPM harus Kepala Desa dari desa yang sama dengan transaksi.');
+        }
     }
 
     protected function atributTersimpan(array $atribut): array
