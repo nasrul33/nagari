@@ -19,17 +19,19 @@ class CoaSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach ($this->kerangkaResmi() as $kode => $nama) {
-            Akun::firstOrCreate(
-                ['kode' => $kode],
-                [
-                    'parent_id' => null,
-                    'nama' => $nama,
-                    'level' => LevelAkun::Akun,
-                    'is_locked' => true,
-                ],
-            );
-        }
+        Akun::denganPenambahanDiizinkan(function () {
+            foreach ($this->kerangkaResmi() as $kode => $nama) {
+                Akun::firstOrCreate(
+                    ['kode' => $kode],
+                    [
+                        'parent_id' => null,
+                        'nama' => $nama,
+                        'level' => LevelAkun::Akun,
+                        'is_locked' => true,
+                    ],
+                );
+            }
+        });
     }
 
     /**

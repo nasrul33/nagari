@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\DB;
  * Invariant (lihat .claude/skills/spp-spm-workflow/SKILL.md):
  * - State tidak boleh dilompati — dijaga di sini, bukan di UI.
  * - Peran yang salah ditolak DAN tercatat di transaksi_logs.
+ *
+ * PERINGATAN (temuan DC-3 audit M2): JANGAN membungkus handle() dalam
+ * DB::transaction milik pemanggil — log penolakan ditulis di koneksi yang
+ * sama dan akan ikut lenyap saat rollback, menghapus jejak audit percobaan
+ * yang ditolak. handle() sudah mengelola transaksinya sendiri.
  */
 abstract class TransisiWorkflow
 {

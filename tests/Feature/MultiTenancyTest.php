@@ -67,6 +67,19 @@ it('global scope membatasi query TahunAnggaran dan Apbdes', function () {
         ->and(Apbdes::first()->uraian)->toBe('Anggaran A');
 });
 
+it('menolak Apbdes dengan desa_id yang tidak konsisten dengan tahun anggarannya', function () {
+    // user desa A membuat Apbdes menunjuk tahun anggaran desa B — trait
+    // mengisi desa_id = A, induknya B → harus ditolak, bukan dibetulkan diam-diam
+    $this->actingAs($this->kaurA);
+
+    expect(fn () => Apbdes::create([
+        'tahun_anggaran_id' => $this->taB->id,
+        'akun_id' => Akun::where('kode', '5')->firstOrFail()->id,
+        'uraian' => 'Lintas tenant',
+        'jumlah_anggaran' => 1_000,
+    ]))->toThrow(LogicException::class, 'tidak sama dengan desa tahun anggaran');
+});
+
 it('Apbdes mewarisi desa_id dari tahun anggaran induknya', function () {
     $apbdes = Apbdes::create([
         'tahun_anggaran_id' => $this->taB->id,

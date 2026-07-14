@@ -56,10 +56,22 @@ class BuatDesaBaru extends Command
         (new PeranSeeder)->run();
         (new CoaSeeder)->run();
 
-        $slug = Str::slug($nama);
+        // Domain email berbasis kode_desa (unik nasional) — nama desa sering
+        // berulang lintas kabupaten (temuan T-4 audit M2).
+        $domain = str_replace('.', '-', $kode).'.desa.id';
+
+        $emails = collect(PeranDesa::cases())
+            ->map(fn (PeranDesa $p) => str_replace('_', '.', $p->value).'@'.$domain);
+
+        if ($bentrok = User::whereIn('email', $emails)->pluck('email')->first()) {
+            $this->error("Email [{$bentrok}] sudah terpakai — onboarding dibatalkan.");
+
+            return self::FAILURE;
+        }
+
         $kredensial = [];
 
-        DB::transaction(function () use ($kode, $nama, $kecamatan, $kabupaten, $provinsi, $tahun, $slug, &$kredensial) {
+        DB::transaction(function () use ($kode, $nama, $kecamatan, $kabupaten, $provinsi, $tahun, $domain, &$kredensial) {
             $desa = Desa::create([
                 'kode_desa' => $kode,
                 'nama' => $nama,
@@ -76,14 +88,19 @@ class BuatDesaBaru extends Command
 
             foreach (PeranDesa::cases() as $peran) {
                 $password = Str::password(16);
-                $email = str_replace('_', '.', $peran->value).'@'.$slug.'.desa.id';
+                $email = str_replace('_', '.', $peran->value).'@'.$domain;
 
-                User::create([
+                $user = User::create([
                     'desa_id' => $desa->id,
                     'name' => $peran->label().' '.$nama,
                     'email' => $email,
                     'password' => $password,
-                ])->assignRole($peran->value);
+                ]);
+
+                // Password onboarding bersifat sementara — sistem memaksa
+                // penggantian pada login pertama (temuan T-8 audit M2).
+                $user->forceFill(['must_change_password' => true])->save();
+                $user->assignRole($peran->value);
 
                 $kredensial[] = [$peran->label(), $email, $password];
             }

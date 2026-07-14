@@ -37,6 +37,45 @@ it('login dengan kata sandi salah ditolak', function () {
     expect(auth()->check())->toBeFalse();
 });
 
+it('mengunci sementara setelah 5 percobaan gagal — kredensial benar pun ditolak', function () {
+    $user = userDenganPeran(PeranDesa::KaurKeuangan);
+
+    foreach (range(1, 5) as $i) {
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'salah-'.$i)
+            ->call('masuk');
+    }
+
+    Livewire::test(Login::class)
+        ->set('email', $user->email)
+        ->set('password', 'password') // benar, tapi sudah terkunci
+        ->call('masuk')
+        ->assertHasErrors('email');
+
+    expect(auth()->check())->toBeFalse();
+});
+
+it('lockout hanya berlaku per email — akun lain tetap bisa masuk', function () {
+    $korban = userDenganPeran(PeranDesa::KaurKeuangan);
+    $lain = userDenganPeran(PeranDesa::SekretarisDesa);
+
+    foreach (range(1, 5) as $i) {
+        Livewire::test(Login::class)
+            ->set('email', $korban->email)
+            ->set('password', 'salah')
+            ->call('masuk');
+    }
+
+    Livewire::test(Login::class)
+        ->set('email', $lain->email)
+        ->set('password', 'password')
+        ->call('masuk')
+        ->assertHasNoErrors();
+
+    expect(auth()->id())->toBe($lain->id);
+});
+
 it('logout mengakhiri sesi', function () {
     $user = userDenganPeran(PeranDesa::KaurKeuangan);
 
