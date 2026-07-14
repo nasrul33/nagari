@@ -22,11 +22,24 @@ class Apbdes extends Model
 
     protected static function booted(): void
     {
-        // desa_id wajib konsisten dengan tahun anggaran induknya
+        // desa_id wajib konsisten dengan tahun anggaran induknya — mismatch
+        // ditolak keras, bukan dibetulkan diam-diam (temuan T-3 audit M2).
         static::creating(function (Apbdes $apbdes) {
-            $apbdes->desa_id ??= TahunAnggaran::withoutGlobalScopes()
+            $desaInduk = TahunAnggaran::withoutGlobalScopes()
                 ->findOrFail($apbdes->tahun_anggaran_id)
                 ->desa_id;
+
+            if ($apbdes->desa_id === null) {
+                $apbdes->desa_id = $desaInduk;
+
+                return;
+            }
+
+            if ((int) $apbdes->desa_id !== (int) $desaInduk) {
+                throw new \LogicException(
+                    'Isolasi desa dilanggar: desa_id APBDes tidak sama dengan desa tahun anggaran induknya.'
+                );
+            }
         });
     }
 

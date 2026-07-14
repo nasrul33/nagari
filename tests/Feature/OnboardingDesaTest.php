@@ -48,6 +48,38 @@ it('onboarding kedua kali tidak menggandakan COA global', function () {
         ->and(Desa::count())->toBe(2);
 });
 
+it('dua desa bernama sama tetap bisa onboard — email berbasis kode desa', function () {
+    foreach ([['13.01.01.2001'], ['13.02.02.2002']] as [$kode]) {
+        $this->artisan('desa:baru', [
+            '--kode' => $kode,
+            '--nama' => 'Sukamaju', // nama kembar lintas kabupaten
+            '--kecamatan' => 'Kec',
+            '--kabupaten' => 'Kab',
+            '--provinsi' => 'Prov',
+        ])->assertSuccessful();
+    }
+
+    expect(Desa::count())->toBe(2)
+        ->and(User::where('email', 'kaur.keuangan@13-01-01-2001.desa.id')->exists())->toBeTrue()
+        ->and(User::where('email', 'kaur.keuangan@13-02-02-2002.desa.id')->exists())->toBeTrue();
+});
+
+it('akun hasil onboarding wajib ganti password pada login pertama', function () {
+    $this->artisan('desa:baru', [
+        '--kode' => '13.03.03.2003',
+        '--nama' => 'Nagari Paksa',
+        '--kecamatan' => 'Kec',
+        '--kabupaten' => 'Kab',
+        '--provinsi' => 'Prov',
+    ])->assertSuccessful();
+
+    $desa = Desa::where('kode_desa', '13.03.03.2003')->firstOrFail();
+
+    User::where('desa_id', $desa->id)->get()->each(
+        fn (User $u) => expect($u->must_change_password)->toBeTrue()
+    );
+});
+
 it('menolak kode desa yang sudah terdaftar', function () {
     Desa::factory()->create(['kode_desa' => '13.09.09.2009']);
 

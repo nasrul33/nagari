@@ -17,6 +17,26 @@ class Akun extends Model
 {
     protected $fillable = ['parent_id', 'kode', 'nama', 'level', 'is_locked'];
 
+    /**
+     * Hanya true selama seeder resmi menambahkan kodefikasi (lihat CoaSeeder).
+     * CATATAN deployment (temuan B-5 audit): flag statis proses-wide — aman
+     * untuk PHP-FPM/queue worker sekuensial, TIDAK aman untuk Octane+Swoole
+     * mode coroutine konkuren.
+     */
+    private static bool $penambahanDiizinkan = false;
+
+    /** Dipakai seeder resmi COA untuk membuka penambahan kodefikasi sementara. */
+    public static function denganPenambahanDiizinkan(callable $callback): mixed
+    {
+        self::$penambahanDiizinkan = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$penambahanDiizinkan = false;
+        }
+    }
+
     protected function casts(): array
     {
         return [
@@ -29,8 +49,9 @@ class Akun extends Model
     {
         static::creating(function (Akun $akun) {
             // Kodefikasi COA di-seed, bukan dibuat custom per tenant (CLAUDE.md).
-            // Penambahan hanya sah dari konteks console (seeder/artisan), bukan request web.
-            if (! app()->runningInConsole()) {
+            // Flag eksplisit — bukan runningInConsole(), yang juga true di queue
+            // worker (temuan DC-1 audit M2).
+            if (! self::$penambahanDiizinkan) {
                 throw new LogicException(
                     'Kodefikasi COA hanya boleh ditambahkan melalui seeder resmi, bukan dari aplikasi.'
                 );

@@ -130,15 +130,15 @@ Subagent terlibat: `security-auditor`.
 Dari review security-auditor + domain-compliance atas commit M2 (temuan blocking T-1/T-2/T-5
 sudah ditutup sebelum merge):
 
-- [ ] **T-4**: email onboarding `desa:baru` berbasis slug nama — tabrakan untuk nama desa
+- [x] **T-4**: email onboarding `desa:baru` berbasis slug nama — tabrakan untuk nama desa
       yang sama lintas kabupaten; pakai kode_desa di domain email + pesan error anggun.
-- [ ] **T-6**: rate limiting login (RateLimiter per email+IP) + kebijakan kekuatan password.
-- [ ] **T-8**: kolom `must_change_password` + middleware pemaksa ganti password login pertama.
-- [ ] **T-3**: validasi konsistensi `Apbdes.desa_id` vs desa tahun anggaran induk (lempar, bukan diam).
-- [ ] **T-7**: migration NOT NULL untuk `apbdes.desa_id` setelah backfill terverifikasi.
-- [ ] **DC-3**: log penolakan transisi ditulis di luar DB::transaction — dokumentasikan larangan
+- [x] **T-6**: rate limiting login (RateLimiter per email+IP) + kebijakan kekuatan password.
+- [x] **T-8**: kolom `must_change_password` + middleware pemaksa ganti password login pertama.
+- [x] **T-3**: validasi konsistensi `Apbdes.desa_id` vs desa tahun anggaran induk (lempar, bukan diam).
+- [x] **T-7**: migration NOT NULL untuk `apbdes.desa_id` setelah backfill terverifikasi.
+- [x] **DC-3**: log penolakan transisi ditulis di luar DB::transaction — dokumentasikan larangan
       membungkus `handle()` dalam transaksi luar, atau buat log tahan rollback.
-- [ ] **DC-1**: guard pembuatan Akun pakai `runningInConsole()` (true juga di queue worker) —
+- [x] **DC-1**: guard pembuatan Akun pakai `runningInConsole()` (true juga di queue worker) —
       pertimbangkan flag eksplisit ala `denganTransisiDiizinkan()`.
 - [ ] **T-9** (wajib sebelum M4/M5): pola "tenant context" eksplisit untuk queue job —
       job wajib menerima `desa_id`, scope mati di konteks console.
@@ -147,6 +147,19 @@ sudah ditutup sebelum merge):
 - [ ] **M3-T3** (wajib saat modul laporan resmi dimulai): agregasi dashboard memakai float —
       cukup untuk visualisasi, tapi laporan resmi (BKU/Buku Pembantu/LRA) WAJIB aritmetika
       desimal/integer sen, bukan float.
+
+Verifikasi penutupan (security-auditor, commit 4effa05): SEMUA temuan T/DC di atas TERTUTUP.
+Temuan hardening lanjutan (B-series):
+
+- [x] **B-1**: ganti password kini memutus sesi lain (`logoutOtherDevices` + `AuthenticateSession`)
+      — menutup jendela akses operator onboarding pasca serah terima.
+- [x] **B-2**: limiter login kedua per-IP lintas email (20/menit) membendung password spraying.
+- [x] **B-3**: invariant "flag must_change_password hanya di-set pra-login" didokumentasikan
+      di middleware; fitur masa depan yang men-set flag mid-session wajib invalidasi sesi.
+- [x] **B-4**: email onboarding = identifier login, BUKAN mailbox — jangan bangun reset-via-email
+      di atasnya (didokumentasikan di BuatDesaBaru).
+- [x] **B-5**: flag statis (Akun/Transaksi) tidak aman untuk Octane+Swoole coroutine —
+      didokumentasikan; migrasi ke Context bila Octane diadopsi.
 
 ## Urutan eksekusi ringkas
 

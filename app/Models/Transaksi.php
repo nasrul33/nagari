@@ -22,7 +22,12 @@ class Transaksi extends Model implements AuditableContract
         'nomor_spp', 'nomor_spm', 'spm_ditandatangani_oleh', 'nomor_rekomendasi_camat',
     ];
 
-    /** Hanya true selama TransisiWorkflow::handle() menyimpan transisi yang sah. */
+    /**
+     * Hanya true selama TransisiWorkflow::handle() menyimpan transisi yang sah.
+     * CATATAN deployment (temuan B-5 audit): flag statis proses-wide — aman
+     * untuk PHP-FPM/queue worker sekuensial, TIDAK aman untuk Octane+Swoole
+     * mode coroutine konkuren.
+     */
     private static bool $transisiDiizinkan = false;
 
     protected static function booted(): void
