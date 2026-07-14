@@ -28,7 +28,7 @@ class Login extends Component
 
         session()->regenerate();
 
-        return $this->redirectIntended(route('transaksi.index'));
+        return $this->redirectIntended(route('dashboard'));
     }
 
     public function render()
