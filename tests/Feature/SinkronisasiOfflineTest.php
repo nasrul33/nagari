@@ -118,8 +118,11 @@ it('menolak versi klien yang lebih lama — versi server dipertahankan dan dicat
 
     expect($hasil[0]['hasil'])->toBe(HasilSinkronisasi::KonflikDitolak->value);
 
-    expect(Transaksi::firstOrFail()->uraian)->toBe('Versi server')
-        ->and(SinkronisasiLog::where('uuid', $item['uuid'])->where('hasil', 'konflik_ditolak')->exists())->toBeTrue();
+    expect(Transaksi::firstOrFail()->uraian)->toBe('Versi server');
+
+    // Jejak audit memuat ISI versi yang KALAH, bukan hanya timestamp.
+    $log = SinkronisasiLog::where('uuid', $item['uuid'])->where('hasil', 'konflik_ditolak')->firstOrFail();
+    expect($log->keterangan)->toContain('Versi lama basi');
 });
 
 // ---------------------------------------------------------- locking approval
@@ -157,6 +160,18 @@ it('menolak item yang tidak valid tanpa membuat transaksi', function () {
 
     expect($hasil[0]['hasil'])->toBe(HasilSinkronisasi::Ditolak->value)
         ->and(Transaksi::count())->toBe(0);
+});
+
+it('mencatat upaya sync yang ditolak walau item tidak membawa uuid', function () {
+    $this->actingAs($this->kaur);
+
+    $tanpaUuid = itemDraft();
+    unset($tanpaUuid['uuid']);
+
+    $hasil = sync([$tanpaUuid]);
+
+    expect($hasil[0]['hasil'])->toBe(HasilSinkronisasi::Ditolak->value)
+        ->and(SinkronisasiLog::whereNull('uuid')->where('hasil', 'ditolak')->count())->toBe(1);
 });
 
 // -------------------------------------------------------- isolasi tenant

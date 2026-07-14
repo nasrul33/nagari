@@ -10,6 +10,7 @@ use App\Models\TahunAnggaran;
 use App\Models\Transaksi;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use RuntimeException;
@@ -25,6 +26,11 @@ use RuntimeException;
  *   terbaru menang; yang kalah dicatat di sinkronisasi_logs.
  *
  * Tiap item diproses independen — satu item gagal tidak membatalkan batch.
+ *
+ * CATATAN audit: pada hasil Diperbarui (klien menang), diff isi lama→baru
+ * terekam di tabel audit owen-it (trait Auditable pada Transaksi); log
+ * sinkronisasi mencatat "siapa/kapan/hasil". Pada KonflikDitolak, isi versi
+ * yang kalah diringkas ke keterangan log.
  */
 class SinkronkanDraftOffline
 {
@@ -84,10 +90,12 @@ class SinkronkanDraftOffline
         $existing = Transaksi::withoutGlobalScopes()->where('uuid', $data['uuid'])->first();
 
         if ($existing !== null && $existing->desa_id !== $pelaku->desa_id) {
+            // Pesan digeneralkan — jangan jadi oracle keberadaan lintas tenant
+            // (temuan T-6 audit).
             return $this->hasil(
                 $pelaku, $data['uuid'], null,
                 HasilSinkronisasi::Ditolak,
-                'UUID sudah dipakai di tenant lain.',
+                'UUID sudah dipakai.',
             );
         }
 
@@ -98,15 +106,30 @@ class SinkronkanDraftOffline
 
     private function buatBaru(User $pelaku, array $data, CarbonImmutable $clientUpdatedAt): array
     {
-        $transaksi = DB::transaction(fn () => Transaksi::create([
-            'uuid' => $data['uuid'],
-            'tahun_anggaran_id' => $data['tahun_anggaran_id'],
-            'akun_id' => $data['akun_id'],
-            'tanggal' => $data['tanggal'],
-            'uraian' => $data['uraian'],
-            'jumlah' => $data['jumlah'],
-            'client_updated_at' => $data['client_updated_at'],
-        ]));
+        try {
+            $transaksi = DB::transaction(fn () => Transaksi::create([
+                // desa_id di-set eksplisit dari pelaku (bukan mengandalkan auth
+                // ambient di trait MilikDesa) supaya action tetap benar bila kelak
+                // dipindah ke queue tanpa Auth::login — pola tenant-context T-9.
+                'desa_id' => $pelaku->desa_id,
+                'uuid' => $data['uuid'],
+                'tahun_anggaran_id' => $data['tahun_anggaran_id'],
+                'akun_id' => $data['akun_id'],
+                'tanggal' => $data['tanggal'],
+                'uraian' => $data['uraian'],
+                'jumlah' => $data['jumlah'],
+                'client_updated_at' => $data['client_updated_at'],
+            ]));
+        } catch (UniqueConstraintViolationException) {
+            // Race: request lain membuat baris uuid ini setelah cek keberadaan
+            // (temuan T-2 audit). Muat ulang dan proses sebagai re-sync idempoten
+            // alih-alih menjatuhkan seluruh batch dengan 500.
+            $baris = Transaksi::withoutGlobalScopes()->where('uuid', $data['uuid'])->firstOrFail();
+
+            return $baris->desa_id === $pelaku->desa_id
+                ? $this->perbaruiAtauTolak($pelaku, $baris, $data, $clientUpdatedAt)
+                : $this->hasil($pelaku, $data['uuid'], null, HasilSinkronisasi::Ditolak, 'UUID sudah dipakai.');
+        }
 
         return $this->hasil($pelaku, $data['uuid'], $transaksi->id, HasilSinkronisasi::Dibuat);
     }
@@ -132,11 +155,19 @@ class SinkronkanDraftOffline
         }
 
         // Konflik: versi server lebih baru — kiriman lama ditolak dan dicatat.
+        // Simpan ringkasan isi versi yang KALAH agar jejak audit lengkap
+        // (siapa/kapan + apa yang ditolak), bukan hanya timestamp.
         if ($tersimpan !== null && $clientUpdatedAt->lessThan($tersimpan)) {
+            $ditolak = sprintf(
+                'uraian=%s; jumlah=%s; akun_id=%s',
+                $data['uraian'], $data['jumlah'], $data['akun_id'],
+            );
+
             return $this->hasil(
                 $pelaku, $data['uuid'], $existing->id,
                 HasilSinkronisasi::KonflikDitolak,
-                'Versi server ('.$tersimpan->toIso8601String().') lebih baru dari kiriman ('.$clientUpdatedAt->toIso8601String().').',
+                'Versi server ('.$tersimpan->toIso8601String().') lebih baru dari kiriman ('
+                    .$clientUpdatedAt->toIso8601String().'). Isi yang ditolak: '.$ditolak,
             );
         }
 
@@ -154,17 +185,17 @@ class SinkronkanDraftOffline
 
     private function hasil(User $pelaku, ?string $uuid, ?int $transaksiId, HasilSinkronisasi $hasil, ?string $keterangan = null): array
     {
-        if ($uuid !== null) {
-            SinkronisasiLog::create([
-                'desa_id' => $pelaku->desa_id,
-                'user_id' => $pelaku->id,
-                'transaksi_id' => $transaksiId,
-                'uuid' => $uuid,
-                'hasil' => $hasil,
-                'keterangan' => $keterangan,
-                'created_at' => now(),
-            ]);
-        }
+        // Selalu catat — termasuk item tak valid tanpa uuid (temuan T-5 audit):
+        // setiap upaya sync meninggalkan jejak untuk pemeriksaan Inspektorat/BPKP.
+        SinkronisasiLog::create([
+            'desa_id' => $pelaku->desa_id,
+            'user_id' => $pelaku->id,
+            'transaksi_id' => $transaksiId,
+            'uuid' => $uuid,
+            'hasil' => $hasil,
+            'keterangan' => $keterangan,
+            'created_at' => now(),
+        ]);
 
         return [
             'uuid' => $uuid,

@@ -26,7 +26,9 @@ Route::middleware(['auth', 'wajib.ganti.password'])->group(function () {
     Route::get('/transaksi/{transaksi}', DetailTransaksi::class)->name('transaksi.detail');
 
     // Endpoint sinkronisasi antrian draft offline (dipanggil service worker/JS).
+    // Throttle mencegah banjir batch dari kredensial yang bocor (temuan T-4 audit).
     Route::post('/sync/transaksi', [SyncController::class, 'transaksi'])
+        ->middleware('throttle:30,1')
         ->name('sync.transaksi');
 
     Route::post('/logout', function () {

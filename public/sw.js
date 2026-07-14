@@ -1,16 +1,18 @@
 /**
  * Service worker offline-first (M5).
  *
- * Strategi:
- * - Navigasi (buka halaman): network-first, fallback ke salinan cache — supaya
- *   halaman entri draft offline tetap terbuka tanpa koneksi setelah dikunjungi.
- * - Aset statis (/build/*): cache-first.
- * - Non-GET (mis. POST /sync/transaksi): selalu jaringan, tidak pernah di-cache.
+ * KEAMANAN (temuan T-1 audit): halaman ter-autentikasi berisi data keuangan &
+ * data pribadi warga TIDAK BOLEH di-cache — di perangkat bersama, salinan cache
+ * bisa tersaji ke user/tenant lain. Karena itu SW ini HANYA meng-cache halaman
+ * entri offline (/transaksi-offline, shell yang datanya diisi dari IndexedDB
+ * per-user) dan aset build statis. Halaman lain selalu jaringan; saat offline,
+ * navigasi dialihkan ke shell entri offline, bukan salinan halaman berdata.
  */
 
-const CACHE = 'keuangan-desa-v1';
+const CACHE = 'keuangan-desa-v2';
+const SHELL_OFFLINE = '/transaksi-offline';
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
@@ -23,11 +25,18 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Pesan dari klien saat logout: buang seluruh cache (temuan T-1).
+self.addEventListener('message', (event) => {
+    if (event.data === 'bersihkan-cache') {
+        event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
+    }
+});
+
 self.addEventListener('fetch', (event) => {
     const { request } = event;
 
     if (request.method !== 'GET') {
-        return; // biarkan POST/sync lewat langsung ke jaringan
+        return; // POST/sync selalu ke jaringan, tidak pernah di-cache
     }
 
     const url = new URL(request.url);
@@ -35,21 +44,37 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Navigasi halaman: network-first dengan fallback cache.
     if (request.mode === 'navigate') {
+        const halamanEntri = url.pathname === SHELL_OFFLINE;
+
         event.respondWith(
             fetch(request)
                 .then((res) => {
-                    const salinan = res.clone();
-                    caches.open(CACHE).then((c) => c.put(request, salinan));
+                    // HANYA halaman entri offline yang di-cache; halaman berdata
+                    // tenant (dashboard/transaksi) tidak pernah disimpan.
+                    if (halamanEntri) {
+                        const salinan = res.clone();
+                        caches.open(CACHE).then((c) => c.put(SHELL_OFFLINE, salinan));
+                    }
                     return res;
                 })
-                .catch(() => caches.match(request).then((cached) => cached || caches.match('/transaksi-offline')))
+                .catch(() =>
+                    // Offline: sajikan shell entri offline (bukan salinan halaman
+                    // berdata), atau pesan sederhana bila belum pernah di-cache.
+                    caches.match(SHELL_OFFLINE).then((cached) =>
+                        cached ||
+                        new Response(
+                            '<!doctype html><meta charset="utf-8"><title>Offline</title>'
+                            + '<p style="font-family:sans-serif;padding:2rem">Anda sedang offline. '
+                            + 'Buka halaman <a href="/transaksi-offline">Draft Offline</a> untuk input tanpa koneksi.</p>',
+                            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+                        )
+                    )
+                )
         );
         return;
     }
 
-    // Aset build: cache-first.
     if (url.pathname.startsWith('/build/')) {
         event.respondWith(
             caches.match(request).then((cached) =>

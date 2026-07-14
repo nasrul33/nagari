@@ -18,7 +18,9 @@ return new class extends Migration
             $table->foreignId('desa_id')->constrained('desas')->restrictOnDelete();
             $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
             $table->foreignId('transaksi_id')->nullable()->constrained('transaksis')->nullOnDelete();
-            $table->uuid('uuid');
+            // nullable: item tak valid yang tak membawa uuid pun tetap dicatat
+            // (temuan T-5 audit — setiap upaya sync meninggalkan jejak).
+            $table->uuid('uuid')->nullable();
             $table->string('hasil');       // App\Enums\HasilSinkronisasi
             $table->string('keterangan', 500)->nullable();
             $table->timestamp('created_at');

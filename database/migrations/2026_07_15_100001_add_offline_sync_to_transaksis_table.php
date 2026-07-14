@@ -17,7 +17,11 @@ return new class extends Migration
     {
         Schema::table('transaksis', function (Blueprint $table) {
             $table->uuid('uuid')->nullable()->unique()->after('id');
-            $table->timestamp('client_updated_at')->nullable()->after('nomor_rekomendasi_camat');
+            // string, BUKAN timestamp: kolom timestamp MySQL default memangkas
+            // sub-detik sehingga presisi milidetik yang jadi dasar resolusi
+            // konflik hilang di prod (temuan T-3 audit). Disimpan ISO mentah,
+            // dibandingkan via Carbon::parse.
+            $table->string('client_updated_at')->nullable()->after('nomor_rekomendasi_camat');
         });
     }
 

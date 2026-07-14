@@ -33,7 +33,7 @@
                         — {{ auth()->user()->desa?->nama }}
                     </div>
                 </div>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" id="form-logout">
                     @csrf
                     <button type="submit"
                             class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">

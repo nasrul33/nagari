@@ -25,11 +25,14 @@ function bukaDb() {
     });
 }
 
-async function idbSemua() {
+async function idbSemua(userId) {
     const db = await bukaDb();
     return new Promise((resolve, reject) => {
         const req = db.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () =>
+            // Scope per user (temuan T-1 audit): di perangkat bersama, antrian
+            // draft milik user lain tidak boleh terlihat/tersinkron di sesi ini.
+            resolve(userId == null ? req.result : req.result.filter((i) => i.userId === userId));
         req.onerror = () => reject(req.error);
     });
 }
@@ -55,12 +58,13 @@ async function idbHapus(uuid) {
 }
 
 /** Komponen Alpine untuk halaman entri draft offline. */
-export function offlineDraft({ tahunAnggarans, akuns, syncUrl, csrf }) {
+export function offlineDraft({ tahunAnggarans, akuns, syncUrl, csrf, userId }) {
     return {
         tahunAnggarans,
         akuns,
         syncUrl,
         csrf,
+        userId,
         antrian: [],
         online: navigator.onLine,
         menyinkron: false,
@@ -75,7 +79,7 @@ export function offlineDraft({ tahunAnggarans, akuns, syncUrl, csrf }) {
         },
 
         async init() {
-            this.antrian = await idbSemua();
+            this.antrian = await idbSemua(this.userId);
 
             window.addEventListener('online', () => {
                 this.online = true;
@@ -111,6 +115,7 @@ export function offlineDraft({ tahunAnggarans, akuns, syncUrl, csrf }) {
 
             const item = {
                 uuid: crypto.randomUUID(),
+                userId: this.userId, // scope antrian per user (temuan T-1)
                 tahun_anggaran_id: f.tahun_anggaran_id,
                 akun_id: f.akun_id,
                 tanggal: f.tanggal,
@@ -202,6 +207,28 @@ function pasangIndikatorKoneksi() {
     render();
 }
 
+/**
+ * Bersihkan cache saat logout (temuan T-1): di perangkat bersama, salinan
+ * halaman/aset milik user sebelumnya tidak boleh tertinggal. Antrian IndexedDB
+ * sengaja TIDAK dihapus (draft belum tersinkron milik user tetap aman & sudah
+ * di-scope per user), hanya Cache Storage yang dibuang.
+ */
+function pasangPembersihLogout() {
+    const form = document.getElementById('form-logout');
+    if (!form) return;
+
+    form.addEventListener('submit', () => {
+        try {
+            navigator.serviceWorker?.controller?.postMessage('bersihkan-cache');
+            if (window.caches) {
+                caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+            }
+        } catch (e) {
+            // best-effort; jangan halangi proses logout
+        }
+    });
+}
+
 function daftarkanServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -212,5 +239,8 @@ function daftarkanServiceWorker() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', pasangIndikatorKoneksi);
+document.addEventListener('DOMContentLoaded', () => {
+    pasangIndikatorKoneksi();
+    pasangPembersihLogout();
+});
 daftarkanServiceWorker();

@@ -68,7 +68,10 @@ Stack: **TALL** — Tailwind CSS, Alpine.js, Laravel, Livewire.
    pengeluaran (SPP→SPM→pencairan); saat ini transaksi pendapatan ikut memakai enum status
    yang sama, dan dashboard menghitung "realisasi pendapatan" = status dicairkan/selesai.
    Perlu keputusan PM: apakah pendapatan butuh state machine sendiri (terima/setor) —
-   temuan T2 review domain-compliance atas commit 59d99a5.
+   temuan T2 review domain-compliance atas commit 59d99a5. CATATAN M5: jalur sync offline
+   kini juga bisa melahirkan draft berakun pendapatan; bila #7 diputuskan pendapatan butuh
+   siklus terima/setor terpisah, `SinkronkanDraftOffline` wajib menolak/mengarahkan akun
+   pendapatan (temuan review domain-compliance atas commit b6596d9).
 
 ## Referensi
 

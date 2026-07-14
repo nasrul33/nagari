@@ -18,6 +18,7 @@
             akuns: @js($akuns),
             syncUrl: @js(route('sync.transaksi')),
             csrf: @js(csrf_token()),
+            userId: @js(auth()->id()),
         })"
         class="grid gap-6 lg:grid-cols-2"
     >
